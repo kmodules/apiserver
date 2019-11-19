@@ -233,6 +233,9 @@ type SecureServingInfo struct {
 	// allowed to be in SNICerts.
 	Cert *tls.Certificate
 
+	// CertFile is the file containing the main server cert.
+	CertFile string
+
 	// SNICerts are the TLS certificates by name used for SNI.
 	SNICerts map[string]*tls.Certificate
 
@@ -467,6 +470,14 @@ func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedCo
 				return ""
 			})
 		}
+	}
+
+	if c.SecureServing != nil && c.SecureServing.CertFile != "" {
+		certChecker, err := healthz.NewCertHealthz(c.SecureServing.CertFile)
+		if err != nil {
+			klog.Fatalf("failed to create certificate checker. Reason: %v", err)
+		}
+		c.HealthzChecks = append(c.HealthzChecks, certChecker)
 	}
 
 	return CompletedConfig{&completedConfig{c, informers}}
