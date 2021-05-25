@@ -85,15 +85,18 @@ func WithLogging(handler http.Handler, pred StacktracePred) http.Handler {
 		rl := newLogged(req, w).StacktraceWhen(pred)
 		req = req.WithContext(context.WithValue(ctx, respLoggerContextKey, rl))
 
-		if rl.status >= http.StatusOK && rl.status < http.StatusMultipleChoices {
-			if klog.V(8).Enabled() {
-				defer func() { klog.InfoS("HTTP", rl.LogArgs()...) }()
+		defer func() {
+			if rl.status >= http.StatusOK && rl.status < http.StatusMultipleChoices {
+				if klog.V(8).Enabled() {
+					klog.InfoS("HTTP", rl.LogArgs()...)
+				}
+			} else {
+				if klog.V(3).Enabled() {
+					klog.InfoS("HTTP", rl.LogArgs()...)
+				}
 			}
-		} else {
-			if klog.V(3).Enabled() {
-				defer func() { klog.InfoS("HTTP", rl.LogArgs()...) }()
-			}
-		}
+		}()
+
 		handler.ServeHTTP(rl, req)
 	})
 }
